@@ -50,6 +50,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AmtEnum.cs" />
+    <Compile Include="BoligPortalRequest.cs" />
+    <Compile Include="BoligPortalResponse.cs" />
     <Compile Include="Scraper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

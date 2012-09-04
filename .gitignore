@@ -37,3 +37,4 @@ Download/
 *.userprefs
 *.docstates
 *.vs10x
+!NuGet.exe

@@ -6,7 +6,7 @@ namespace BoligScraper
     public class BoligPortalRequest
     {
         [JsonProperty(PropertyName = "amtId")]
-        public AmtEnum Amt { get; set; }
+        public RegionEnum Amt { get; set; }
         [JsonProperty(PropertyName = "huslejeMin")]
         public string RentMin { get; set; }
         [JsonProperty(PropertyName = "huslejeMax")]

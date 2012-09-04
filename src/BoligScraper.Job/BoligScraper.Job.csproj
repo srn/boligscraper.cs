@@ -4,7 +4,7 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>8ae0f57f-7f0e-406e-8709-9a74c8ff633a</ProjectGuid>
+    <ProjectGuid>{BE51D3A4-D421-4443-AE54-361CDD8588B5}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>BoligScraper.Job</RootNamespace>

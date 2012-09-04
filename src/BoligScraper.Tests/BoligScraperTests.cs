@@ -22,7 +22,7 @@ namespace BoligScraper.Tests
             // Arrange
             var boligPortalRequest = new BoligPortalRequest
                                          {
-                                             Amt = AmtEnum.Aarhus,
+                                             Amt = RegionEnum.Aarhus,
                                              RentMin = "0",
                                              RentMax = "10000",
                                              ZipCodes = new List<int> {8000, 8200},

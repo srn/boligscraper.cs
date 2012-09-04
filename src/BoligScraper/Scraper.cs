@@ -1,10 +1,15 @@
-﻿using Newtonsoft.Json;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using Newtonsoft.Json;
 using RestSharp;
 
 namespace BoligScraper
 {
     public class Scraper
     {
+        private IList<string> _cachedBoligPortalIds;
+
         public BoligPortalResponse Scrape(BoligPortalRequest boligPortalRequest, out IRestResponse restResponse)
         {
             var client = new RestClient { BaseUrl = "http://www.boligportal.dk" };
@@ -15,7 +20,16 @@ namespace BoligScraper
 
             restResponse = client.Execute(request);
 
-            return JsonConvert.DeserializeObject<BoligPortalResponse>(restResponse.Content);
+            var boligPortalResponse = JsonConvert.DeserializeObject<BoligPortalResponse>(restResponse.Content);
+
+            _cachedBoligPortalIds = boligPortalResponse.Properties.Select(p => p.Id).ToList();
+
+            return boligPortalResponse;
+        }
+
+        public void CompareCachedIdsWithNewIds()
+        {
+            throw new NotImplementedException();
         }
     }
 }

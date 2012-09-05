@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Net.Mail;
@@ -10,7 +11,7 @@ namespace BoligScraper
 {
     public class Scraper
     {
-        private IList<string> _cachedBoligPortalIds;
+        private static List<string> _cachedBoligPortalIds;
 
         public BoligPortalResponse Scrape(BoligPortalRequest boligPortalRequest, out IRestResponse restResponse)
         {
@@ -32,7 +33,10 @@ namespace BoligScraper
         public IList<string> CompareCachedIdsWithNewIds(IList<string> newIds)
         {
             if (_cachedBoligPortalIds == null || !_cachedBoligPortalIds.Any())
+            {
+                _cachedBoligPortalIds = newIds.ToList();
                 return newIds;
+            }
 
             var mergedIds = new List<string>();
             mergedIds.AddRange(_cachedBoligPortalIds);
@@ -40,18 +44,18 @@ namespace BoligScraper
 
             IList<string> compareCachedIdsWithNewIds = mergedIds.Except(_cachedBoligPortalIds).ToList();
 
-            _cachedBoligPortalIds = newIds;
+            _cachedBoligPortalIds.Clear();
+            _cachedBoligPortalIds = newIds.ToList();
 
             return compareCachedIdsWithNewIds;
         }
 
         public void SendEmail(BoligPortalProperty boligPortalProperty, UserPreference userPreference)
         {
-            var email = Email
-                         .From("myopentracker@gmail.com", "boligscraper.io")
+            var email = Email.From("myopentracker@gmail.com", "boligscraper.io")
                          .To(userPreference.Email)
-                         .Subject(string.Format("{0} - {1}", boligPortalProperty.Headline, boligPortalProperty.Economy.Rent))
-                         .Body(string.Format("http://www.boligportal.dk{0}", boligPortalProperty.Url));
+                         .Subject(String.Format("{0} - {1}", boligPortalProperty.Headline, boligPortalProperty.Economy.Rent))
+                         .Body(String.Format("http://www.boligportal.dk{0}", boligPortalProperty.Url));
 
             email.SendAsync(MailDeliveryComplete);
         }

@@ -1,65 +1,73 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using RestSharp;
 
 namespace BoligScraper.Job
 {
-    class Program
+    internal class Program
     {
         private static Scraper _boligScraper;
+        private static UserPreference _userPreference;
+        private static BoligPortalRequest _boligPortalRequest;
 
-        static void Main(string[] args)
+
+        private static void Tick(Object stateInfo)
         {
-            _boligScraper = new Scraper();
-
-
-            UserPreference userPreference = GetUserPreference();
-
-            var boligPortalRequest = new BoligPortalRequest
-            {
-                Amt = ((int)userPreference.Region).ToString(),
-                RentMin = "0",
-                RentMax = userPreference.RentMax,
-                SizeMin = "0",
-                SizeMax = "0",
-                ZipCodes = userPreference.ZipCodes,
-                ApartmentType = new List<string> { "2" },
-                RentLength = new List<string> { "4" },
-                Page = "1",
-                Limit = "15",
-                SortCol = "3",
-                SortDesc = "1",
-                ShowOnSiteApartment = 0,
-                Default = -1,
-                Pictures = -1,
-                HousePets = -1,
-                Furnished = -1,
-                Shareable = -1,
-                OnlyLatest = false,
-                Sublease = -1
-            };
+            Console.WriteLine(string.Format("{0} :: Scraping", DateTime.Now));
 
             IRestResponse restResponse;
-            BoligPortalResponse boligPortalResponse = _boligScraper.Scrape(boligPortalRequest, out restResponse);
+            BoligPortalResponse boligPortalResponse = _boligScraper.Scrape(_boligPortalRequest, out restResponse);
 
             List<string> newIds = boligPortalResponse.Properties.Select(p => p.Id).ToList();
             IList<string> compareCachedIdsWithNewIds = _boligScraper.CompareCachedIdsWithNewIds(newIds);
 
-            compareCachedIdsWithNewIds.ForEach((i, id) =>
-                                                   {
-                                                       BoligPortalProperty boligPortalProperty = boligPortalResponse.Properties.SingleOrDefault(p => p.Id == id);
+            compareCachedIdsWithNewIds.ForEach((i, id) => HandleEmail(boligPortalResponse, id, _userPreference));
 
-                                                       if (boligPortalProperty == null)
-                                                           return;
+            Console.WriteLine("Waiting for next callback");
+        }
 
-                                                       _boligScraper.SendEmail(boligPortalProperty, userPreference);
-                                                       Console.ReadLine();
+        private static void Main(string[] args)
+        {
+            _boligScraper = new Scraper();
 
-                                                       Console.WriteLine(string.Format("Send email for '{0}'", boligPortalProperty.Id));
-                                                   });
+            _userPreference = GetUserPreference();
+            _boligPortalRequest = new BoligPortalRequest
+                                      {
+                                          Amt = ((int) _userPreference.Region).ToString(),
+                                          RentMin = "0",
+                                          RentMax = _userPreference.RentMax,
+                                          ZipCodes = _userPreference.ZipCodes,
+                                          ApartmentType = new List<string> {"3", "4"},
+                                          RentLength = new List<string> {"4"},
+                                          Page = "1",
+                                          Limit = "15",
+                                          SortCol = "3",
+                                          SortDesc = "1"
+                                      };
 
-            Console.ReadLine();
+            Console.WriteLine("Creating infinite loop: {0}\n",
+                              DateTime.Now.ToString("h:mm:ss"));
+
+            var callback = new TimerCallback(Tick);
+            var stateTimer = new Timer(callback, null, 0, 120000); // 2 minutes
+
+            // infinite loop
+            for (;;) { }
+        }
+
+        private static void HandleEmail(BoligPortalResponse boligPortalResponse, string id,
+                                        UserPreference userPreference)
+        {
+            BoligPortalProperty boligPortalProperty = boligPortalResponse.Properties.SingleOrDefault(p => p.Id == id);
+
+            if (boligPortalProperty == null)
+                return;
+
+            _boligScraper.SendEmail(boligPortalProperty, userPreference);
+
+            Console.WriteLine(string.Format("Send email for '{0}'", boligPortalProperty.Id));
         }
 
         private static UserPreference GetUserPreference()
@@ -81,8 +89,8 @@ namespace BoligScraper.Job
         private static List<int> GetAppSettingsZipCodes()
         {
             var zipCodes = new List<int>();
-            
-            var appSettingsHelper = AppSettingsHelper.GetValue<string>("ZipCodes").Replace(" ", string.Empty);
+
+            string appSettingsHelper = AppSettingsHelper.GetValue<string>("ZipCodes").Replace(" ", string.Empty);
             string[] splittedZipCodes = appSettingsHelper.Split(Convert.ToChar(","));
             splittedZipCodes.ForEach((i, zipCode) => zipCodes.Add(int.Parse(zipCode)));
 

@@ -13,19 +13,21 @@ namespace BoligScraper.Job
         private static BoligPortalRequest _boligPortalRequest;
 
 
-        private static void Tick(Object stateInfo)
+        private static void Tick()
         {
             Console.WriteLine(string.Format("{0} :: Scraping", DateTime.Now));
 
             IRestResponse restResponse;
             BoligPortalResponse boligPortalResponse = _boligScraper.Scrape(_boligPortalRequest, out restResponse);
 
+            Console.WriteLine(string.Format("{0} :: Got response code: {1}", DateTime.Now, restResponse.StatusCode));
+
             List<string> newIds = boligPortalResponse.Properties.Select(p => p.Id).ToList();
             IList<string> compareCachedIdsWithNewIds = _boligScraper.CompareCachedIdsWithNewIds(newIds);
 
             compareCachedIdsWithNewIds.ForEach((i, id) => HandleEmail(boligPortalResponse, id, _userPreference));
 
-            Console.WriteLine("Waiting for next callback");
+            Console.WriteLine(string.Format("{0} :: Waiting for next callback", DateTime.Now));
         }
 
         private static void Main(string[] args)
@@ -47,14 +49,18 @@ namespace BoligScraper.Job
                                           SortDesc = "1"
                                       };
 
-            Console.WriteLine("Creating infinite loop: {0}\n",
-                              DateTime.Now.ToString("h:mm:ss"));
+            Console.WriteLine("{0} :: Creating infinite loop\n", DateTime.Now);
 
-            var callback = new TimerCallback(Tick);
-            var stateTimer = new Timer(callback, null, 0, 120000); // 2 minutes
+            //var callback = new TimerCallback(Tick);
+            //var stateTimer = new Timer(callback, null, 0, 120000); // 2 minutes
 
             // infinite loop
-            for (;;) { }
+            while (true)
+            {
+                Tick();
+
+                Thread.Sleep(120000);
+            }
         }
 
         private static void HandleEmail(BoligPortalResponse boligPortalResponse, string id,
@@ -67,7 +73,7 @@ namespace BoligScraper.Job
 
             _boligScraper.SendEmail(boligPortalProperty, userPreference);
 
-            Console.WriteLine(string.Format("Send email for '{0}'", boligPortalProperty.Id));
+            Console.WriteLine(string.Format("{0} :: Send email for '{1}' to '{2}'", DateTime.Now, boligPortalProperty.Id, userPreference.Email));
         }
 
         private static UserPreference GetUserPreference()
@@ -83,6 +89,9 @@ namespace BoligScraper.Job
                                          RentMax = AppSettingsHelper.GetValue<string>("RentMax"),
                                          ZipCodes = GetAppSettingsZipCodes()
                                      };
+
+            Console.WriteLine(string.Format("{0} ::\nRegion: {1}\n Email: {2}\n RentMax: {3}\n ZipCodes: {4}\n", DateTime.Now, userPreference.Region, userPreference.Email, userPreference.RentMax, AppSettingsHelper.GetValue<string>("ZipCodes")));
+
             return userPreference;
         }
 

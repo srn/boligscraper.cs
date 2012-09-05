@@ -57,24 +57,7 @@ namespace BoligScraper
                          .Subject(String.Format("{0} - {1}", boligPortalProperty.Headline, boligPortalProperty.Economy.Rent))
                          .Body(String.Format("http://www.boligportal.dk{0}", boligPortalProperty.Url));
 
-            email.SendAsync(MailDeliveryComplete);
-        }
-
-        private static void MailDeliveryComplete(object sender, AsyncCompletedEventArgs e)
-        {
-            if (e.Error != null)
-            {
-                // handle error
-            }
-            else if (e.Cancelled)
-            {
-                // handle cancelled
-            }
-            else
-            {
-                // handle sent email
-                var message = (MailMessage)e.UserState;
-            }
+            email.Send();
         }
     }
 }

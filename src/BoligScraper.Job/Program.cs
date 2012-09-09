@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading;
 using RestSharp;
 
@@ -12,6 +13,7 @@ namespace BoligScraper.Job
         private static UserPreference _userPreference;
         private static BoligPortalRequest _boligPortalRequest;
 
+        private static bool _firstRun = true;
 
         private static void Tick()
         {
@@ -20,14 +22,29 @@ namespace BoligScraper.Job
             IRestResponse restResponse;
             BoligPortalResponse boligPortalResponse = _boligScraper.Scrape(_boligPortalRequest, out restResponse);
 
-            Console.WriteLine(string.Format("{0} :: Got response code: {1}", DateTime.Now, restResponse.StatusCode));
+            if (restResponse.StatusCode != HttpStatusCode.OK)
+            {
+                Console.WriteLine(string.Format("Received an invalid status code: {0}. Should be {1}", restResponse.StatusCode, HttpStatusCode.OK));
+                return;
+            }
 
-            List<string> newIds = boligPortalResponse.Properties.Select(p => p.Id).ToList();
-            IList<string> compareCachedIdsWithNewIds = _boligScraper.CompareCachedIdsWithNewIds(newIds);
+            if (boligPortalResponse == null || boligPortalResponse.Properties == null || !boligPortalResponse.Properties.Any())
+            {
+                Console.WriteLine("Received a non-deserializable response.");
+                return;
+            }
 
-            compareCachedIdsWithNewIds.ForEach((i, id) => HandleEmail(boligPortalResponse, id, _userPreference));
+            if (!_firstRun)
+            {
+                List<string> newIds = boligPortalResponse.Properties.Select(p => p.Id).ToList();
+                IList<string> compareCachedIdsWithNewIds = _boligScraper.CompareAndReturnNewIds(newIds);
+
+                compareCachedIdsWithNewIds.ForEach((i, id) => HandleEmail(boligPortalResponse, id, _userPreference));
+            }
 
             Console.WriteLine(string.Format("{0} :: Waiting for next callback", DateTime.Now));
+
+            _firstRun = false;
         }
 
         private static void Main(string[] args)
@@ -41,7 +58,7 @@ namespace BoligScraper.Job
                                           RentMin = "0",
                                           RentMax = _userPreference.RentMax,
                                           ZipCodes = _userPreference.ZipCodes,
-                                          ApartmentType = new List<string> {"3", "4"},
+                                          ApartmentType = _userPreference.ApartmentTypes,
                                           RentLength = new List<string> {"4"},
                                           Page = "1",
                                           Limit = "15",
@@ -51,15 +68,12 @@ namespace BoligScraper.Job
 
             Console.WriteLine("{0} :: Creating infinite loop\n", DateTime.Now);
 
-            //var callback = new TimerCallback(Tick);
-            //var stateTimer = new Timer(callback, null, 0, 120000); // 2 minutes
-
             // infinite loop
             while (true)
             {
                 Tick();
 
-                Thread.Sleep(120000);
+                Thread.Sleep(120000); // 2 minutes
             }
         }
 
@@ -81,21 +95,22 @@ namespace BoligScraper.Job
             var region = AppSettingsHelper.GetValue<string>("Region");
             var regionEnum = (RegionEnum) Enum.Parse(typeof (RegionEnum), region, true);
 
-            // TODO: userPreference.ApartmentType = AppSettingsHelper.GetValue<ApartmentTypeEnum>("ApartmentType");
             var userPreference = new UserPreference
                                      {
                                          Region = regionEnum,
                                          Email = AppSettingsHelper.GetValue<string>("Email"),
                                          RentMax = AppSettingsHelper.GetValue<string>("RentMax"),
-                                         ZipCodes = GetAppSettingsZipCodes()
+                                         ZipCodes = GetZipCodes(),
+                                         ApartmentTypes = GetApartmentTypes()
                                      };
 
-            Console.WriteLine(string.Format("{0} ::\nRegion: {1}\n Email: {2}\n RentMax: {3}\n ZipCodes: {4}\n", DateTime.Now, userPreference.Region, userPreference.Email, userPreference.RentMax, AppSettingsHelper.GetValue<string>("ZipCodes")));
+            Console.WriteLine(string.Format("{0} ::\nRegion: {1}\n Email: {2}\n RentMax: {3}\n ZipCodes: {4}\n ApartmentTypes: {5}\n", DateTime.Now, userPreference.Region, userPreference.Email, userPreference.RentMax, AppSettingsHelper.GetValue<string>("ZipCodes"), AppSettingsHelper.GetValue<string>("ApartmentTypes")));
 
             return userPreference;
         }
 
-        private static List<int> GetAppSettingsZipCodes()
+        // TODO: Refactor these two _almost_ identical methods
+        private static IList<int> GetZipCodes()
         {
             var zipCodes = new List<int>();
 
@@ -104,6 +119,17 @@ namespace BoligScraper.Job
             splittedZipCodes.ForEach((i, zipCode) => zipCodes.Add(int.Parse(zipCode)));
 
             return zipCodes;
+        }
+
+        private static IList<string> GetApartmentTypes()
+        {
+            var apartmentTypes = new List<string>();
+
+            string apartmentTypesFromAppSettings = AppSettingsHelper.GetValue<string>("ApartmentTypes").Replace(" ", string.Empty);
+            string[] splittedApartmentTypes = apartmentTypesFromAppSettings.Split(Convert.ToChar(","));
+            splittedApartmentTypes.ForEach((i, apartmentType) => apartmentTypes.Add(apartmentType));
+
+            return apartmentTypes;
         }
     }
 }

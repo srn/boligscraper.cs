@@ -16,11 +16,11 @@ namespace BoligScraper
         [JsonProperty(PropertyName = "stoerrelseMax")]
         public string SizeMax { get; set; }
         [JsonProperty(PropertyName = "postnrArr")]
-        public List<int> ZipCodes { get; set; }
+        public IList<int> ZipCodes { get; set; }
         [JsonProperty(PropertyName = "boligTypeArr")]
-        public List<string> ApartmentType { get; set; }
+        public IList<string> ApartmentType { get; set; }
         [JsonProperty(PropertyName = "lejeLaengdeArr")]
-        public List<string> RentLength { get; set; }
+        public IList<string> RentLength { get; set; }
         [JsonProperty(PropertyName = "page")]
         public string Page { get; set; }
         [JsonProperty(PropertyName = "limit")]

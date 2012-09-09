@@ -14,6 +14,9 @@ namespace BoligScraper.Tests
         public void SetUp()
         {
             _boligScraper = new Scraper();
+
+            // TODO: Add mock data for being able to test in offline mode
+            // e.g. a new local .json file
         }
 
         [Test]
@@ -48,8 +51,10 @@ namespace BoligScraper.Tests
         public void CanCompareOldIdsWithNewIdsAndReturnNewIdsOnly()
         {
             // Arrange
+            const int expectedNewId = 12345;
+
             var oldIds = new List<int> { 123, 1234, 123456, 1233 };
-            var newIds = new List<int> { 123, 1234, 12345 };
+            var newIds = new List<int> { 123, 1234, expectedNewId };
 
             // Act
             var mergedIds = new List<int>();
@@ -61,7 +66,7 @@ namespace BoligScraper.Tests
             // Assert
             Assert.That(except, Is.Not.Null);
             Assert.That(except.Count(), Is.EqualTo(1));
-            Assert.That(except.SingleOrDefault(), Is.EqualTo(12345));
+            Assert.That(except.SingleOrDefault(), Is.EqualTo(expectedNewId));
         }
     }
 }

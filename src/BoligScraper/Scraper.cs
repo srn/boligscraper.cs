@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.IO;
 using System.Linq;
-using System.Net.Mail;
 using FluentEmail;
 using Newtonsoft.Json;
 using RestSharp;
@@ -30,11 +29,12 @@ namespace BoligScraper
             return boligPortalResponse;
         }
 
-        public IList<string> CompareCachedIdsWithNewIds(IList<string> newIds)
+        public IList<string> CompareAndReturnNewIds(IList<string> newIds)
         {
             if (_cachedBoligPortalIds == null || !_cachedBoligPortalIds.Any())
             {
                 _cachedBoligPortalIds = newIds.ToList();
+
                 return newIds;
             }
 

@@ -7,12 +7,7 @@ namespace BoligScraper
         public string Email { get; set; }
         public RegionEnum Region { get; set; }
         public string RentMax { get; set; }
-        public List<int> ZipCodes { get; set; }
-        public ApartmentTypeEnum ApartmentType { get; set; }
-    }
-
-    public enum ApartmentTypeEnum
-    {
-
+        public IList<int> ZipCodes { get; set; }
+        public IList<string> ApartmentTypes { get; set; }
     }
 }
